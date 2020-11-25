@@ -36,7 +36,7 @@ Create and initialize the specific environment.
 The full League of Legends v4.20 game environment. Initialize as follows:
 
     env = gym.make('LoLGame-v0')
-    # todo: options go here...
+    todo: options go here...
     
 Versions:
 - `LoLGame-v0`: The full game with complete access to action and observation
@@ -47,7 +47,7 @@ space.
 like `pylol` does. You only need to call it with an array of action and arguments.
 For example:
 
-    # todo: action function call example goes here...
+    todo: action function call example goes here...
 
 - This environment doesn't specify the observation_space and action_space members
 like traditional `gym` environments. Instead, it provides access to the `observation_spec`
