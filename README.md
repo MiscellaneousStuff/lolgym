@@ -9,7 +9,7 @@ PyLoL environment.
 
 You can install LoLGym from a local clone of the git repo:
 
-`shell
+```shell
 git clone https://github.com/MiscellaneousStuff/lolgym.git
 pip3 install --upgrade lolgym/
 ```
