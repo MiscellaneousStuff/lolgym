@@ -9,8 +9,9 @@ You can install LoLGym from a local clone of the git repo:
 
 ```shell
 git clone https://github.com/MiscellaneousStuff/lolgym.git
-pip3 install --upgrade lolgym/
+pip3 install -e lolgym/
 ```
+
 ## Usage
 
 You need the following minimum code to run any LoLGym environment:
@@ -35,9 +36,16 @@ Create and initialize the specific environment.
 
 The full League of Legends v4.20 game environment. Initialize as follows:
 
-    env = gym.make('LoLGame-v0')
-    todo: options go here...
+    env = gym.make("LoLGame-v0")
+    env.settings["map_name"] = "New Summoners Rift" # Set the map
+    env.settings["human_observer"] = False # Set to true to run league client
+    env.settings["host"] = "localhost" # Set this to a local ip
+    env.settings["players"] = "Nidalee.BLUE,Lucian.PURPLE"
     
+The `players` setting specifies which champions are in the game and what
+team they are playing on. The `pysc2` environment expects them to be in
+a comma-separated list of Champion.TEAM items with that exact capitalization.
+
 Versions:
 - `LoLGame-v0`: The full game with complete access to action and observation
 space.
@@ -47,24 +55,32 @@ space.
 like `pylol` does. You only need to call it with an array of action and arguments.
 For example:
 
-    todo: action function call example goes here...
+        _SPELL = actions.FUNCTIONS.spell.id
+        _EZREAL_Q = [0]
+        _TARGET = point.Point(8000, 8000)
+        acts = [[_SPELL, _EZREAL_Q, _TARGET] for _ in range(env.n_agents)]
+        obs_n, reward_n, done_n, _ = env.step(acts)
 
-- This environment doesn't specify the observation_space and action_space members
+    The environment will not check whether an action is valid before passing it
+    along to the `pysc2` environment so make sure you've checked what actions are
+    available from `obs.observation["available_actions"]`.
+
+- This environment doesn't specify the `observation_space` and `action_space` members
 like traditional `gym` environments. Instead, it provides access to the `observation_spec`
 and `action_spec` objects from the `pylol` environment.
 
 ### General Notes
-*  Per the Gym environment specifications, the reset function returns an observation,
-and the step function returns a tuple (observation, reward, done, info), where info is
-an empty dictionary and the observation is the observatoin object from the pylol 
-environment. The reward is the same as observation.reward, and done is equal true if
-observation.step_type is LAST.
-* Aside from `step()` and `reset()`, the enviroments define a `save_replay()`,
-method that accepts a single parameter `replay_dir`, which is the name of the replay
-directory to save the GameServer replays inside of.
+* Per the Gym environment specifications, the reset function returns an observation,
+and the step function returns a tuple (observation_n, reward_n, done_n, info_n), where
+info_n is a list of empty dictionaries. However, because `lolgym` is a multi-agent environment
+each item is a list of items, i.e. `observation_n` is an observation for each agent, `reward_n`
+is the reward for each agent, `done_n` is whether any of the `observations.step_type` is `LAST`.
+* Aside from `step()` and `reset()`, the environments define a `save_replay()`
+method, that accepts a single parameter `replay_dir`, which is the name of the replay
+directory to save the `GameServer` replays inside of.
 * All the environments have the following additional properties:
     - `episode`: The current episode number
     - `num_step`: The total number of steps taken
     - `episode_reward`: The total reward received for this episode
     - `total_reward`: The total reward received for all episodes
-* The examples folder contains examples of using the environments.
+* The examples folder contains examples of using the various environments.
