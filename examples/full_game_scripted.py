@@ -49,11 +49,7 @@ def main():
     env.teleport(1, point.Point(7500.0, 7500.0))
 
     while not all(done_n):
-        # actions = [scripted_action(env, timestep) for timestep in obs_n]
-        _SPELL = actions.FUNCTIONS.spell.id
-        _EZREAL_Q = [0]
-        _TARGET = point.Point(8000, 8000)
-        acts = [[_SPELL, _EZREAL_Q, _TARGET] for _ in range(env.n_agents)]
+        actions = [scripted_action(env, timestep) for timestep in obs_n]
         obs_n, reward_n, done_n, _ = env.step(acts)
         ep_reward += sum(reward_n)
 
