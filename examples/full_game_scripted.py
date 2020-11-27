@@ -50,7 +50,7 @@ def main():
 
     while not all(done_n):
         actions = [scripted_action(env, timestep) for timestep in obs_n]
-        obs_n, reward_n, done_n, _ = env.step(acts)
+        obs_n, reward_n, done_n, _ = env.step(actions)
         ep_reward += sum(reward_n)
 
     env.close()
