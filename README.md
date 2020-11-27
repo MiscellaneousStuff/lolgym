@@ -74,7 +74,7 @@ and `action_spec` objects from the `pylol` environment.
 and the step function returns a tuple (observation_n, reward_n, done_n, info_n), where
 info_n is a list of empty dictionaries. However, because `lolgym` is a multi-agent environment
 each item is a list of items, i.e. `observation_n` is an observation for each agent, `reward_n`
-is the reward for each agent, `done_n` is whether any of the `observations.step_type` is `LAST`.
+is the reward for each agent, `done_n` is whether any of the `observation.step_type` is `LAST`.
 * Aside from `step()` and `reset()`, the environments define a `save_replay()`
 method, that accepts a single parameter `replay_dir`, which is the name of the replay
 directory to save the `GameServer` replays inside of.
