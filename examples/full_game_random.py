@@ -34,9 +34,10 @@ FLAGS = flags.FLAGS
 
 def main():
     env = gym.make("LoLGame-v0")
-    env.settings["map_name"] = "New Summoners Rift"
-    # env.settings["human_observer"] = True # Set to true to run league client
+    env.settings["map_name"] = "Howling Abyss"
+    env.settings["human_observer"] = True # Set to true to run league client
     env.settings["host"] = "192.168.0.16" # Set this to localhost or "hostname -i" on Linux
+    env.settings["players"] = "Lucian.BLUE,Lucian.PURPLE"
 
     done_n = [False for _ in range(env.n_agents)]
     ep_reward = 0
@@ -44,10 +45,13 @@ def main():
     obs_n = env.reset()
 
     #while not all(done_n):
-    for _ in range(100): # Use number of steps instead of deaths to end episode
+    for _ in range(500): # Use number of steps instead of deaths to end episode
         actions = [random_action(env, timestep) for timestep in obs_n]
         obs_n, reward_n, done_n, _ = env.step(actions)
         ep_reward += sum(reward_n)
+
+        if any(done_n):
+            break
 
     env.close()
 
