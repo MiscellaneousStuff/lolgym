@@ -37,7 +37,7 @@ tf.compat.v1.disable_eager_execution()
 
 import gym
 import lolgym.envs
-import ppo
+from . import ppo
 from pylol.lib import actions, features, point
 from pylol.lib import point
 
