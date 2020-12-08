@@ -26,6 +26,8 @@ import subprocess
 from absl import flags
 from absl import app
 
+import os
+
 from pylol.lib import run_parallel
 
 FLAGS = flags.FLAGS
@@ -34,7 +36,8 @@ flags.DEFINE_integer("count", 1, "Number of games to run at once")
 def main(unused_argv):
     parallel = run_parallel.RunParallel()
 
-    args = ["python3", "full_game_ppo.py"]
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    args = ["python3", dir_path + "/full_game_ppo.py"]
 
     try:
         parallel.run((subprocess.Popen, args) for _ in range(FLAGS.count))

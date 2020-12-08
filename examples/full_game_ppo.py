@@ -37,7 +37,6 @@ tf.compat.v1.disable_eager_execution()
 
 import gym
 import lolgym.envs
-from . import ppo
 from pylol.lib import actions, features, point
 from pylol.lib import point
 
@@ -48,12 +47,100 @@ _NO_OP = [actions.FUNCTIONS.no_op.id]
 _MOVE = [actions.FUNCTIONS.move.id]
 _SPELL = [actions.FUNCTIONS.spell.id]
 
-"""
-NEXT THING WHICH NEEDS TO BE IMPLEMENTED:
-- THE ACTION SPACE AND OBSERVATION SPACE NEEDS TO BE MINIMIZED TO ONLY WHATS NEEDED
-  FOR THE SIMPLEST EXAMPLES (E.G. SUCCESSFULLY KILLING ANOTHER AGENT, FARMING MINIONS,
-  KITING, ETC.)
-"""
+import gym
+from gym.spaces import Box, Tuple, Discrete, Dict, MultiDiscrete
+
+import matplotlib.pyplot as plt
+
+def plot_data(lll):
+    plt.figure(figsize=(16, 8))
+    plt.subplot(1,2,1)
+    plt.plot([x[1] for x in lll], label="Mean Episode Reward")
+    plt.plot([x[2] for x in lll], label="Epoch Loss")
+    plt.legend()
+    plt.subplot(1,2,2)
+    plt.plot([x[3] for x in lll], color='green', label="value Loss")
+    plt.legend()
+
+class PPOAgent(object):
+    """Basic PPO implementation for LoLGym environment."""
+    def __init__(self, hidden_layers=1, gamma=0.99, action_space=2):
+        observation_space = Box(low=0, high=800, shape=(1,), dtype=np.float32)
+        action_space = Discrete(action_space)
+        
+        self.observation_space = observation_space
+        self.action_space = action_space
+
+        self.init_policy_function(hidden_layers=hidden_layers)
+        self.init_value_function(hidden_layers=hidden_layers)
+
+        self.gamma = gamma
+        self.lll = []
+
+    def init_value_function(self, hidden_layers):
+        observation_space = self.observation_space
+
+        # value function
+        x = in1 = Input(observation_space.shape)
+        x = Dense(hidden_layers, activation='elu')(x)
+        x = Dense(hidden_layers, activation='elu')(x)
+        x = Dense(hidden_layers, activation='elu')(x)
+        x = Dense(1)(x)
+        v = Model(in1, x)
+        v.compile(Adam(1e-3), 'mse')
+        v.summary()
+
+        vf = K.function(v.layers[0].input, v.layers[-1].output)
+
+        self.vf = vf
+        self.v = v
+
+    def init_policy_function(self, hidden_layers):
+        observation_space = self.observation_space
+        action_space = self.action_space
+
+        # policy function
+        x = in_state = Input(observation_space.shape)
+        x = Dense(hidden_layers, activation='elu')(x) # x = Dense(16, activation='elu')(x)
+        x = Dense(hidden_layers, activation='elu')(x) # x = Dense(16, activation='elu')(x)
+        x = Dense(hidden_layers, activation='elu')(x) # x = Dense(16, activation='elu')(x)
+        # x = Dense(action_space_n)(x)
+        x = Dense(action_space.n)(x)
+        action_dist = Lambda(lambda x: tf.nn.log_softmax(x, axis=-1))(x)
+        #print("Action Dist:", action_dist)
+        p = Model(in_state, action_dist)
+        #print("POLICY MODEL LAYERS:", p.layers[0].input, [p.layers[-1].output,
+        #                tf.random.categorical(p.layers[-1].output, 1)[0]])
+        pf = K.function(p.layers[0].input,
+                        [p.layers[-1].output,
+                        tf.random.categorical(p.layers[-1].output, 1)[0]])
+        #print("God knows:", tf.random.categorical(p.layers[-1].output, 1)[0])
+        in_advantage = Input((1,))
+        in_old_prediction = Input((action_space.n,))
+
+        def loss(y_true, y_pred):
+            advantage = tf.reshape(in_advantage, (-1,))
+        
+            # y_pred is the log probs of the actions
+            # y_true is the action mask
+            prob = tf.reduce_sum(y_true * y_pred, axis=-1)
+            old_prob = tf.reduce_sum(y_true * in_old_prediction, axis=-1)
+            ratio = tf.exp(prob - old_prob)  # hehe, they are log probs, so we subtract
+            
+            # this is the VPG objective
+            #ll = -(prob * advantage)
+            
+            # this is PPO objective
+            ll = -K.minimum(ratio*advantage, K.clip(ratio, 0.8, 1.2)*advantage)
+            return ll
+
+        popt = Model([in_state, in_advantage, in_old_prediction], action_dist)
+        popt.compile(Adam(5e-4), loss)
+        popt.summary()
+
+        self.pf = pf
+        self.popt = popt
+        self.p = p
 
 def main():
     final_out = "" # Used to store outputs
@@ -70,7 +157,7 @@ def main():
     env.settings["host"] = "192.168.0.16" # Set this using "hostname -i" ip on Linux
     env.settings["players"] = "Ezreal.BLUE,Ezreal.PURPLE"
 
-    agent = ppo.PPOAgent(
+    agent = PPOAgent(
         hidden_layers=hidden_layers,
         gamma=gamma,
         action_space=2)
@@ -103,7 +190,7 @@ def main():
                 # Convert act into pylol action
                 # print("ACT:", act)
                 act_x = 8 if act else 0
-                print("ACT X:", act_x)
+                #print("ACT X:", act_x)
                 act_y = 4
                 target_pos = point.Point(raw_obs[0].observation["me_unit"].position_x,
                                          raw_obs[0].observation["me_unit"].position_y)
@@ -146,7 +233,7 @@ def main():
         sign = "+" if lll[-1][1] >= 0 else ""
         final_out += sign + str(lll[-1][1])
     
-    ppo.plot_data(lll)
+    # plot_data(lll)
 
     with open(experiment_name + "_" + str(hidden_layers) + "_layers_" + str(uuid.uuid4()) + ".txt", "w") as f:
         f.write(final_out)
@@ -164,7 +251,7 @@ def main():
         # Convert act into pylol action
         # print("ACT:", act)
         act_x = 8 if act else 0
-        print("ACT X:", act_x)
+        # print("ACT X:", act_x)
         act_y = 4
         target_pos = point.Point(raw_obs[0].observation["me_unit"].position_x,
                                     raw_obs[0].observation["me_unit"].position_y)
