@@ -36,7 +36,7 @@ _SPELL = [actions.FUNCTIONS.spell.id]
 
 def main():
     env = gym.make("LoLGame-v0")
-    env.settings["map_name"] = "New Summoners Rift"
+    env.settings["map_name"] = "Old Summoners Rift"
     env.settings["human_observer"] = True # Set to true to run league client
     env.settings["host"] = "192.168.0.16" # Set this using "hostname -i" ip on Linux
     env.settings["players"] = "Ezreal.BLUE,Ezreal.PURPLE"
@@ -46,15 +46,16 @@ def main():
 
     obs_n = env.reset()
 
-    env.teleport(1, point.Point(8000.0, 8000.0))
+    env.teleport(1, point.Point(7500.0, 7500.0))
 
     #while not all(done_n):
     for i in range(200):
         actions = [scripted_action(env, timestep) for timestep in obs_n]
-        obs_n, reward_n, done_n, _ = env.step(actions)
+        obs_n, reward_n, done_n, _ = env.step(actions)            
+        
         if any(done_n):
-            env.teleport(1, point.Point(8000.0, 8000.0))
-            done_n = [False for _ in range(env.n_agents)]
+           break
+
         ep_reward += sum(reward_n)
 
     env.close()
