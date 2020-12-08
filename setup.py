@@ -46,7 +46,7 @@ setup(
     packages=[
         'lolgym',
         'lolgym.envs',
-        'lolgym.examples'
+        'examples'
     ],
     install_requires=['gym', 'absl-py', 'numpy'], # Can't add pylol as it's not on pip
     classifiers=[
