@@ -57,6 +57,7 @@ from absl import app
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config_dirs.txt", "Path to file containing GameServer and LoL Client directories")
+flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
 
 def plot_data(lll):
     plt.figure(figsize=(16, 8))
@@ -160,7 +161,7 @@ def main(unused_argv):
     env = gym.make("LoLGame-v0")
     env.settings["map_name"] = "Old Summoners Rift"
     # env.settings["human_observer"] = True # Set to true to run league client
-    env.settings["host"] = "192.168.0.16" # Set this using "hostname -i" ip on Linux
+    env.settings["host"] = FLAGS.host # Set this using "hostname -i" ip on Linux
     env.settings["players"] = "Ezreal.BLUE,Ezreal.PURPLE"
     env.settings["config_path"] = FLAGS.config_path
     agent = PPOAgent(
@@ -178,6 +179,7 @@ def main(unused_argv):
             obs = env.reset()
             env.teleport(1, point.Point(7100.0, 7500.0))
             raw_obs = obs
+            print("RAW OBS:", raw_obs[0].observation["me_unit"])
             obs = np.array(raw_obs[0].observation["enemy_unit"].distance_to_me)[None]
             rews = []
             steps = 0
@@ -212,8 +214,9 @@ def main(unused_argv):
                 
                 # Default reward is our HP but now we get agent to move away from enemy
                 # rew = rew[0] # Default reward is our own HP
+                print(+raw_obs[0].observation["enemy_unit"].distance_to_me)
                 rew = +raw_obs[0].observation["enemy_unit"].distance_to_me
-
+                
                 done = done[0]
                 rews.append(rew)
 

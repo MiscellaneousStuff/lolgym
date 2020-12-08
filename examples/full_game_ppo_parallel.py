@@ -33,12 +33,15 @@ from pylol.lib import run_parallel
 FLAGS = flags.FLAGS
 flags.DEFINE_integer("count", 1, "Number of games to run at once")
 flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config_dirs.txt", "Path to file containing GameServer and LoL Client directories")
+flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
 
 def main(unused_argv):
     parallel = run_parallel.RunParallel()
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
-    args = ["python3", dir_path + "/full_game_ppo.py", "--config_path", FLAGS.config_path]
+    args = ["python3", dir_path + "/full_game_ppo.py",
+            "--config_path", FLAGS.config_path,
+            "--host", FLAGS.host]
 
     try:
         parallel.run((subprocess.Popen, args) for _ in range(FLAGS.count))
