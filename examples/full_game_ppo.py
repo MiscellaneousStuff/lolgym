@@ -52,6 +52,12 @@ from gym.spaces import Box, Tuple, Discrete, Dict, MultiDiscrete
 
 import matplotlib.pyplot as plt
 
+from absl import flags
+from absl import app
+
+FLAGS = flags.FLAGS
+flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config_dirs.txt", "Path to file containing GameServer and LoL Client directories")
+
 def plot_data(lll):
     plt.figure(figsize=(16, 8))
     plt.subplot(1,2,1)
@@ -142,7 +148,7 @@ class PPOAgent(object):
         self.popt = popt
         self.p = p
 
-def main():
+def main(unused_argv):
     final_out = "" # Used to store outputs
     hidden_layers = 2 # <= try changing this next...
     gamma = 0.99
@@ -156,7 +162,7 @@ def main():
     # env.settings["human_observer"] = True # Set to true to run league client
     env.settings["host"] = "192.168.0.16" # Set this using "hostname -i" ip on Linux
     env.settings["players"] = "Ezreal.BLUE,Ezreal.PURPLE"
-
+    env.settings["config_path"] = FLAGS.config_path
     agent = PPOAgent(
         hidden_layers=hidden_layers,
         gamma=gamma,
@@ -278,5 +284,8 @@ def main():
     print("Ran %d steps, got %f reward" % (len(rews), np.sum(rews)))
     env.close()
 
+def entry_point():
+    app.run(main)
+
 if __name__ == "__main__":
-    main()
+    app.run(main)
