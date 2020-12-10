@@ -73,6 +73,8 @@ class PPOAgent(object):
         self.init_value_function(units=units)
 
         self.gamma = gamma
+        self.units = units
+
         self.lll = []
 
         self.X = []
@@ -89,7 +91,7 @@ class PPOAgent(object):
 
         self.env = env
 
-    def plot_data(lll):
+    def plot_data(self, lll):
         plt.figure(figsize=(16, 8))
         plt.subplot(1,2,1)
         plt.plot([x[1] for x in lll], label="Mean Episode Reward")
@@ -204,11 +206,12 @@ class PPOAgent(object):
 
         return loss, vloss
 
-    def close():
-        env.close()
+    def close(self):
+        self.env.close()
 
-    def run(max_steps):
+    def run(self, max_steps):
         obs = self.env.reset()
+        self.env.teleport(1, point.Point(7100.0, 7500.0))
         raw_obs = obs
         obs = np.array(raw_obs[0].observation["enemy_unit"].distance_to_me)[None]
         rews = []
@@ -292,17 +295,17 @@ class PPOAgent(object):
         
         self.plot_data(lll)
 
-        with open(experiment_name + "_" + str(units) + "_units_" + str(uuid.uuid4()) + ".txt", "w") as f:
+        with open(experiment_name + "_" + str(self.units) + "_units_" + str(uuid.uuid4()) + ".txt", "w") as f:
             f.write(final_out)
 
 def main(unused_argv):
     units = 1 # <= try changing this next...
     gamma = 0.99
-    epochs = 50
+    epochs = 1
     batch_steps = 25
     episode_steps = 25
     experiment_name = "run_away"
-    run_client = False
+    run_client = True
 
     # Declare, train and run agent
     agent = PPOAgent(
