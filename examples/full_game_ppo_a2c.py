@@ -21,71 +21,59 @@
 # SOFTWARE.
 """Example of basic full game environment implementing A2C PPO."""
 
-import uuid
-
-import random
-import time
-import numpy as np
-
 import threading
 from queue import Queue
 
-import tensorflow as tf
-import tensorflow.keras.backend as K
-from tensorflow.keras.models import Model, clone_model
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.layers import Input, Dense, Activation, Lambda, LSTM
-
-tf.compat.v1.disable_eager_execution()
-
-import gym
-import lolgym.envs
-from pylol.lib import actions, features, point
-from pylol.lib import point
-
-from absl import flags
-FLAGS = flags.FLAGS
-
-_NO_OP = [actions.FUNCTIONS.no_op.id]
-_MOVE = [actions.FUNCTIONS.move.id]
-_SPELL = [actions.FUNCTIONS.spell.id]
-
-import gym
-from gym.spaces import Box, Tuple, Discrete, Dict, MultiDiscrete
-
-import matplotlib.pyplot as plt
+from .full_game_ppo import PPOAgent, Controller
 
 from absl import flags
 from absl import app
 
+from gym.spaces import Box, Discrete
+
+import numpy as np
+
 FLAGS = flags.FLAGS
 flags.DEFINE_integer("count", 1, "Number of games to run at once")
-flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config_dirs.txt", "Path to file containing GameServer and LoL Client directories")
-flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
+# NOTE: Below flags are inherited from full_game_ppo module
+#flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config_dirs.txt", "Path to file containing GameServer and LoL Client directories")
+#flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
 
-def plot_data(lll):
-    plt.figure(figsize=(16, 8))
-    plt.subplot(1,2,1)
-    plt.plot([x[1] for x in lll], label="Mean Episode Reward")
-    plt.plot([x[2] for x in lll], label="Epoch Loss")
-    plt.legend()
-    plt.subplot(1,2,2)
-    plt.plot([x[3] for x in lll], color='green', label="value Loss")
-    plt.legend()
+def train_thread(controller, run_client):
+    epochs = 10
+    batch_steps = 25
+    episode_steps = batch_steps
+    experiment_name = "run_away"
+    run_client = run_client
 
-def run_thread():
-    print("hi")
+    # Declare, train and run agent
+    agent = PPOAgent(controller=controller, run_client=run_client)
+    agent.train(epochs=epochs,
+                batch_steps=batch_steps,
+                episode_steps=episode_steps,
+                experiment_name=experiment_name)
+    agent.run(max_steps=episode_steps)
+
+    agent.close()
 
 def main(unused_argv):
     """Run an agent."""
 
+    # Declare observation space, action space and model controller
+    units = 1 # <= try changing this next...
+    gamma = 0.99
+    observation_space = Box(low=0, high=24000, shape=(1,), dtype=np.float32)
+    action_space = Discrete(2)
+    controller = Controller(units, gamma, observation_space, action_space)
+
     threads = []
     for _ in range(FLAGS.count-1):
-        t = threading.Thread(target=run_thread)
+        t = threading.Thread(target=train_thread,
+                             args=(controller, False,))
         threads.append(t)
         t.start()
     
-    run_thread()
+    train_thread(controller, True) # Training thread which renders the client
 
     for t in threads:
         t.join()

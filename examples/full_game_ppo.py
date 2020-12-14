@@ -58,38 +58,37 @@ from absl import app
 FLAGS = flags.FLAGS
 flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config_dirs.txt", "Path to file containing GameServer and LoL Client directories")
 flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
-    
 
-class PPOAgent(object):
-    """Basic PPO implementation for LoLGym environment."""
-    def __init__(self, units=1, gamma=0.99, action_space=2, run_client=False):
-        observation_space = Box(low=0, high=800, shape=(1,), dtype=np.float32)
-        action_space = Discrete(action_space)
+class Controller(object):
+    def __init__(self,
+                 units=1,
+                 gamma=0.99,
+                 #batch_steps=None,
+                 observation_space=None,
+                 action_space=None):
         
+        """
+        if not batch_steps:
+            raise ValueError("Controller needs batch step count specified")
+        """
+
+        self.units = units
+        self.gamma = gamma
+
         self.observation_space = observation_space
         self.action_space = action_space
 
         self.init_policy_function(units=units)
         self.init_value_function(units=units)
 
-        self.gamma = gamma
-        self.units = units
-
-        self.lll = []
-
         self.X = []
         self.Y = []
         self.V = []
         self.P = []
 
-        env = gym.make("LoLGame-v0")
-        env.settings["map_name"] = "Old Summoners Rift"
-        env.settings["human_observer"] = run_client # Set to true to run league client
-        env.settings["host"] = FLAGS.host # Set this using "hostname -i" ip on Linux
-        env.settings["players"] = "Ezreal.BLUE,Ezreal.PURPLE"
-        env.settings["config_path"] = FLAGS.config_path
-
-        self.env = env
+        self.n_agents = 0
+        self.d_agents = 0
+        self.cur_updating = True
 
     def plot_data(self, lll):
         plt.figure(figsize=(16, 8))
@@ -118,7 +117,7 @@ class PPOAgent(object):
 
         self.vf = vf
         self.v = v
-
+    
     def init_policy_function(self, units):
         observation_space = self.observation_space
         action_space = self.action_space
@@ -162,8 +161,74 @@ class PPOAgent(object):
         self.popt = popt
         self.p = p
 
+    def fit(self, batch_size=5, epochs=10, shuffle=True, verbose=0):
+        X = self.X
+        Y = self.Y
+        V = self.V
+        P = self.P
+
+        self.d_agents += 1
+
+        print("[FIT] FIT CHECK:", self.d_agents, self.n_agents)
+        print(X)
+        print(Y)
+        print(V)
+        print(P)
+
+        if self.d_agents < self.n_agents:
+            return None, None
+
+        print("[FIT] TRAINING ON DATA")
+
+        X, Y, V, P = [np.array(x) for x in [X, Y, V, P]]
+
+        # Subtract value baseline to get advantage
+        A = V - self.vf(X)[:, 0]
+
+        loss = self.popt.fit([X, A, P], Y, batch_size=5, epochs=10, shuffle=True, verbose=0)
+        loss = loss.history["loss"][-1]
+        vloss = self.v.fit(X, V, batch_size=5, epochs=10, shuffle=True, verbose=0)
+        vloss = vloss.history["loss"][-1]
+
+        self.X = []
+        self.Y = []
+        self.V = []
+        self.P = []
+        
+        self.d_agents = 0
+
+        return loss, vloss
+
+    def get_pred_act(obs):
+        pred, act = [x[0] for x in self.pf(obs[None])]
+        return pred, act
+
+    def register_agent(self):
+        self.n_agents += 1
+        return self.n_agents
+
+class PPOAgent(object):
+    """Basic PPO implementation for LoLGym environment."""
+    def __init__(self, controller=None, run_client=False):
+        if not controller:
+            raise ValueError("PPOAgent needs to be provided an external controller")
+        
+        self.controller = controller
+        self.agent_id = controller.register_agent()
+
+        print("PPOAgent:", self.agent_id, "Controller:", self.controller)
+
+        env = gym.make("LoLGame-v0")
+        env.settings["map_name"] = "Old Summoners Rift"
+        env.settings["human_observer"] = run_client # Set to true to run league client
+        env.settings["host"] = FLAGS.host # Set this using "hostname -i" ip on Linux
+        env.settings["players"] = "Ezreal.BLUE,Ezreal.PURPLE"
+        env.settings["config_path"] = FLAGS.config_path
+
+        self.env = env
+
     def convert_action(self, raw_obs, act):
-        action_space = self.action_space
+        action_space = self.controller.action_space
 
         act_x = 8 if act else 0
         act_y = 4
@@ -177,34 +242,11 @@ class PPOAgent(object):
         return act
 
     def save_pair(self, obs, act):
-        action_space = self.action_space
-        self.X.append(np.copy(obs))
+        action_space = self.controller.action_space
+        self.controller.X.append(np.copy(obs))
         act_mask = np.zeros((action_space.n))
         act_mask[act] = 1.0
-        self.Y.append(act_mask)
-
-    def fit(self):
-        X = self.X
-        Y = self.Y
-        V = self.V
-        P = self.P
-
-        X, Y, V, P = [np.array(x) for x in [X, Y, V, P]]
-
-        # Subtract value baseline to get advantage
-        A = V - self.vf(X)[:, 0]
-
-        loss = self.popt.fit([X, A, P], Y, batch_size=5, epochs=20, shuffle=True, verbose=0)
-        loss = loss.history["loss"][-1]
-        vloss = self.v.fit(X, V, batch_size=5, epochs=20, shuffle=True, verbose=0)
-        vloss = vloss.history["loss"][-1]
-
-        self.X = []
-        self.Y = []
-        self.V = []
-        self.P = []
-
-        return loss, vloss
+        self.controller.Y.append(act_mask)
 
     def close(self):
         self.env.close()
@@ -216,9 +258,10 @@ class PPOAgent(object):
         obs = np.array(raw_obs[0].observation["enemy_unit"].distance_to_me)[None]
         rews = []
         steps = 0
+
         while True:
             steps += 1
-            pred, act = [x[0] for x in self.pf(obs[None])]
+            pred, act = [x[0] for x in self.controller.pf(obs[None])]
             act = np.argmax(pred)
 
             act = self.convert_action(raw_obs, act)
@@ -246,7 +289,7 @@ class PPOAgent(object):
             st = time.perf_counter()
             # X, Y, V, P = [], [], [], []
             ll = []
-            while len(self.X) < batch_steps:
+            while len(self.controller.X) < batch_steps:
                 obs = self.env.reset()
                 self.env.teleport(1, point.Point(7100.0, 7500.0))
                 raw_obs = obs
@@ -258,8 +301,9 @@ class PPOAgent(object):
                     steps += 1
 
                     # Prediction, action, save prediction
-                    pred, act = [x[0] for x in self.pf(obs[None])]
-                    self.P.append(pred)
+                    print("[AGENT " + str(self.agent_id) + "]: obs[None] :=", obs[None])
+                    pred, act = [x[0] for x in self.controller.pf(obs[None])]
+                    self.controller.P.append(pred)
 
                     # Save this state action pair
                     self.save_pair(obs, act)
@@ -281,38 +325,41 @@ class PPOAgent(object):
                     if done or steps == episode_steps:
                         ll.append(np.sum(rews))
                         for i in range(len(rews)-2, -1, -1):
-                            rews[i] += rews[i+1] * self.gamma
-                        self.V.extend(rews)
+                            rews[i] += rews[i+1] * self.controller.gamma
+                        self.controller.V.extend(rews)
                         break
+            
+            loss, vloss = self.controller.fit()
 
-            loss, vloss = self.fit()
-
-            lll.append((epoch, np.mean(ll), loss, vloss, len(self.X), len(ll), time.perf_counter() - st))
-            print("%3d  ep_rew:%9.2f  loss:%7.2f   vloss:%9.2f  counts: %5d/%3d tm: %.2f s" % lll[-1])
-
-            sign = "+" if lll[-1][1] >= 0 else ""
-            final_out += sign + str(lll[-1][1])
+            if loss != None and vloss != None:
+                lll.append((epoch, np.mean(ll), loss, vloss, len(self.controller.X), len(ll), time.perf_counter() - st))
+                print("%3d  ep_rew:%9.2f  loss:%7.2f   vloss:%9.2f  counts: %5d/%3d tm: %.2f s" % lll[-1])
+                self.env.broadcast_msg("Episode No: %3d  Episode Reward: %9.2f" % (lll[-1][0], lll[-1][1]))
+                sign = "+" if lll[-1][1] >= 0 else ""
+                final_out += sign + str(lll[-1][1])
         
-        self.plot_data(lll)
+        self.controller.plot_data(lll)
 
-        with open(experiment_name + "_" + str(self.units) + "_units_" + str(uuid.uuid4()) + ".txt", "w") as f:
+        with open(experiment_name + "_" + str(self.controller.units) + "_units_" + str(uuid.uuid4()) + ".txt", "w") as f:
             f.write(final_out)
 
 def main(unused_argv):
     units = 1 # <= try changing this next...
     gamma = 0.99
-    epochs = 1
+    epochs = 50
     batch_steps = 25
-    episode_steps = 25
+    episode_steps = batch_steps
     experiment_name = "run_away"
     run_client = True
 
+    # Declare observation space, action space and model controller
+    observation_space = Box(low=0, high=24000, shape=(1,), dtype=np.float32)
+    action_space = Discrete(2)
+    controller = Controller(units, gamma, observation_space, action_space)
+    # controller = Controller(units, gamma, batch_steps, observation_space, action_space)
+
     # Declare, train and run agent
-    agent = PPOAgent(
-        units=units,
-        gamma=gamma,
-        action_space=2,
-        run_client=run_client)
+    agent = PPOAgent(controller=controller, run_client=run_client)
     agent.train(epochs=epochs,
                 batch_steps=batch_steps,
                 episode_steps=episode_steps,

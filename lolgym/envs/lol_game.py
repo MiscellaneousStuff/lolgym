@@ -66,6 +66,9 @@ class LoLGameEnv(gym.Env):
     def step(self, actions):
         return self._safe_step(actions)
     
+    def broadcast_msg(self, msg):
+        self._env.broadcast_msg(msg)
+
     def _safe_step(self, acts):
         self._num_step += 1
         try:
