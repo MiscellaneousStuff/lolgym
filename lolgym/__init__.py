@@ -28,3 +28,9 @@ register(
     entry_point='lolgym.envs:LoLGameEnv',
     kwargs={}
 )
+
+register(
+    id='LoL1DEscape-v0',
+    entry_point='lolgym.envs:Escape1DEnv',
+    kwargs={}
+)

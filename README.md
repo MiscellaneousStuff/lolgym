@@ -41,7 +41,7 @@ Create and initialize the specific environment.
 
 ## Available Environments
 
-### LoLGame
+### LoL1v1
 
 The full League of Legends v4.20 game environment. Initialize as follows:
 
@@ -58,6 +58,22 @@ a comma-separated list of Champion.TEAM items with that exact capitalization.
 Versions:
 - `LoLGame-v0`: The full game with complete access to action and observation
 space.
+
+### LoL1DEscape
+
+Minigame where the controlling agent must maximize it's distance from the other
+agent by moving either left or right. Initialize as follows:
+
+    env = gym.make("LoL1DEscape-v0")
+    env.settings["map_name"] = "New Summoners Rift" # Set the map
+    env.settings["human_observer"] = False # Set to true to run league client
+    env.settings["host"] = "localhost" # Set this to a local ip
+    env.settings["players"] = "Nidalee.BLUE,Lucian.PURPLE"
+
+Versions:
+- `LoL1DEscape-v0`: Highly stripped version of LoL1v1 where the only observation
+is the controlling agents distance from the enemy agent and the only action is to
+move left or right.
 
 #### Notes
 - The action space for this environment doesn't require the call to `functionCall`

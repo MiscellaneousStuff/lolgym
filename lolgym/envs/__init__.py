@@ -22,3 +22,4 @@
 """Import all of the available environments."""
 
 from lolgym.envs.lol_game import LoLGameEnv
+from lolgym.envs.escape_1d import Escape1DEnv
