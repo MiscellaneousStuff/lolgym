@@ -56,7 +56,7 @@ from absl import flags
 from absl import app
 
 FLAGS = flags.FLAGS
-flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config_dirs.txt", "Path to file containing GameServer and LoL Client directories")
+flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config.txt", "Path to file containing GameServer and LoL Client directories")
 flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
 
 class Controller(object):
