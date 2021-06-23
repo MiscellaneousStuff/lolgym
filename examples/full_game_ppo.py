@@ -296,7 +296,8 @@ class PPOAgent(object):
             ll = []
             while len(self.controller.X) < batch_steps:
                 obs = self.env.reset()
-                self.env.teleport(1, point.Point(7100.0, 7500.0))
+                self.env.teleport(1, point.Point(7100.0, 7000.0))
+                self.env.teleport(2, point.Point(7500.0, 7000.0))
                 raw_obs = obs
                 # print("RAW OBS:", raw_obs[0].observation["me_unit"])
                 obs = np.array(raw_obs[0].observation["enemy_unit"].distance_to_me)[None]
