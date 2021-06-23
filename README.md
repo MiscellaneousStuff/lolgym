@@ -52,7 +52,7 @@ The full League of Legends v4.20 game environment. Initialize as follows:
     env.settings["players"] = "Nidalee.BLUE,Lucian.PURPLE"
     
 The `players` setting specifies which champions are in the game and what
-team they are playing on. The `pysc2` environment expects them to be in
+team they are playing on. The `pylol` environment expects them to be in
 a comma-separated list of Champion.TEAM items with that exact capitalization.
 
 Versions:
