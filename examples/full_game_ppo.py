@@ -254,7 +254,11 @@ class PPOAgent(object):
 
     def run(self, max_steps):
         obs = self.env.reset()
-        self.env.teleport(1, point.Point(7100.0, 7500.0))
+        
+        # Spawning agents at Y = 7000 due to Google Colab camera centering where agent 1 spawns
+        # Ensure escaping agent is slightly left of the enemy agent so going left is the best policy
+        self.env.teleport(1, point.Point(7100.0, 7000.0))
+        self.env.teleport(2, point.Point(7500.0, 7000.0))
         raw_obs = obs
         obs = np.array(raw_obs[0].observation["enemy_unit"].distance_to_me)[None]
         rews = []
