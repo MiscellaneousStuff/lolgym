@@ -58,6 +58,7 @@ from absl import app
 FLAGS = flags.FLAGS
 flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config.txt", "Path to file containing GameServer and LoL Client directories")
 flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
+flags.DEFINE_integer("epochs", 50, "Number of episodes to run the experiment for")
 
 class Controller(object):
     def __init__(self,
@@ -346,7 +347,7 @@ class PPOAgent(object):
 def main(unused_argv):
     units = 1 # <= try changing this next...
     gamma = 0.99
-    epochs = 50
+    epochs = FLAGS.epochs # epochs = 50
     batch_steps = 25
     episode_steps = batch_steps
     experiment_name = "run_away"
