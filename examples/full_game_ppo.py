@@ -59,7 +59,7 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config.txt", "Path to file containing GameServer and LoL Client directories")
 flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
 flags.DEFINE_integer("epochs", 50, "Number of episodes to run the experiment for")
-flags.DEFINE_integer("step_multiplier", 1.0, "Run game server x times faster than real-time")
+flags.DEFINE_float("step_multiplier", 1.0, "Run game server x times faster than real-time")
 
 class Controller(object):
     def __init__(self,
