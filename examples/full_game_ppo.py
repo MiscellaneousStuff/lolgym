@@ -275,7 +275,7 @@ class PPOAgent(object):
             raw_obs = obs
             obs = np.array(raw_obs[0].observation["enemy_unit"].distance_to_me)[None]
             
-            rew = +raw_obs[0].observation["enemy_unit"].distance_to_me
+            rew = +(raw_obs[0].observation["enemy_unit"].distance_to_me / 1000.0)
 
             done = done[0]
             rews.append(rew)
@@ -323,7 +323,7 @@ class PPOAgent(object):
                     obs = np.array(raw_obs[0].observation["enemy_unit"].distance_to_me)[None]
                     
                     # print(pred, act)
-                    rew = +raw_obs[0].observation["enemy_unit"].distance_to_me
+                    rew = +(raw_obs[0].observation["enemy_unit"].distance_to_me / 1000.0)
                     
                     done = done[0]
                     rews.append(rew)
