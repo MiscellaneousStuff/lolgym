@@ -356,7 +356,7 @@ def main(unused_argv):
     batch_steps = 25
     episode_steps = batch_steps
     experiment_name = "run_away"
-    run_client = True
+    run_client = False
 
     # Declare observation space, action space and model controller
     observation_space = Box(low=0, high=24000, shape=(1,), dtype=np.float32)
