@@ -48,7 +48,7 @@ setup(
         'lolgym.envs',
         'examples'
     ],
-    install_requires=['gym', 'absl-py', 'numpy'], # Can't add pylol as it's not on pip
+    install_requires=['gym', 'absl-py', 'numpy', 'tensorflow', 'pylol-rl'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',

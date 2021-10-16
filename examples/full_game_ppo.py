@@ -60,6 +60,7 @@ flags.DEFINE_string("config_path", "/mnt/c/Users/win8t/Desktop/pylol/config.txt"
 flags.DEFINE_string("host", "192.168.0.16", "Host IP for GameServer, LoL Client and Redis")
 flags.DEFINE_integer("epochs", 50, "Number of episodes to run the experiment for")
 flags.DEFINE_float("step_multiplier", 1.0, "Run game server x times faster than real-time")
+flags.DEFINE_bool("run_client", False, "Controls whether the game client is run or not")
 
 class Controller(object):
     def __init__(self,
@@ -358,7 +359,7 @@ def main(unused_argv):
     batch_steps = 25
     episode_steps = batch_steps
     experiment_name = "run_away"
-    run_client = False
+    run_client = FLAGS.run_client
 
     # Declare observation space, action space and model controller
     observation_space = Box(low=0, high=24000, shape=(1,), dtype=np.float32)
